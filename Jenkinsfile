@@ -9,6 +9,7 @@ pipeline {
     environment {
         ARTEFACT_NAME = "${WORKSPACE}/target/WebGoat-${BUILD_VERSION}.war"
         IQ_SCAN_URL = ""
+        BUILD_TAG = "webgoat-${BUILD_VERSION}"
     }
 
     stages {
@@ -45,6 +46,20 @@ pipeline {
 
                     echo "Nexus IQ scan succeeded: ${policyEvaluation.applicationCompositionReportUrl}"
                     env.IQ_SCAN_URL = policyEvaluation.applicationCompositionReportUrl
+                }
+            }
+
+            stage ("Publish to Repo"){
+                steps{
+                    script{
+                        nexusPublisher nexusInstanceId: 'nxrm3',
+                        nexusRepositoryId: "maven-releases",
+                        packages: [[$class: 'MavenPackage',
+                            mavenAssetList: [[classifier: '', extension: 'war', filePath: "${ARTEFACT_NAME}"]],
+                            mavenCoordinate: [artifactId: 'WebGoat', groupId: 'org.demo', 
+                                            packaging: 'war', version: "${BUILD_VERSION}"]]],
+                            tagName: "${BUILD_TAG}"
+                    }
                 }
             }
         }
